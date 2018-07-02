@@ -79,6 +79,13 @@ class FileInfo(object):
         self.is_link = is_link
 
 
+# Exceptions
+class VlcPlayProblem(Exception):
+    def __init__(self, message, detail=None):
+        super().__init__(message)
+        self.error_detail = detail
+
+
 # Routes
 @hapic.with_api_doc()
 @app.route('/send/<file_name>', methods=['POST'])
@@ -147,11 +154,23 @@ def play_bird_avi():
 
 @hapic.with_api_doc()
 @app.route('/play/<file>')
+@hapic.handle_exception(VlcPlayProblem)
 @hapic.input_path(PlayFilePathSchema())
 @hapic.output_body(EmptyResponseSchema(), default_http_code=204)
 def play_file(file, hapic_data):
     file_name = hapic_data.path['file']
     player = vlc.MediaPlayer(file_name)
+
+    if not isfile(file_name):
+        raise VlcPlayProblem(
+            'Error when trying to read "{}": file not exist'.format(
+                file_name,
+            ),
+            detail=dict(
+                file_path=file_name,
+            )
+        )
+
     player.play()
     return '', 204
 
