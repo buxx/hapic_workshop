@@ -95,7 +95,7 @@ class VlcPlayProblem(Exception):
 # Error builders
 class ErrorBuilder(ErrorBuilderInterface):
     msg = marshmallow.fields.String(required=True)
-    utc_datetime = marshmallow.fields.DateTime(required=True)
+    utc_datetime = marshmallow.fields.DateTime(required=False)
     traceback = marshmallow.fields.String(
         required=False,
         allow_none=True,
@@ -124,19 +124,17 @@ class ErrorBuilder(ErrorBuilderInterface):
         return {
             'msg': error.message,
             'utc_datetime': datetime.utcnow(),
+            'details': error.details,
         }
 
 
 # Routes
 @hapic.with_api_doc()
-@app.route('/send/<file_name>', methods=['POST'])
-@hapic.input_path(SendInputPathSchema())
-@hapic.input_files(SendInputFilesSchema())
+@app.route('/bird')
 @hapic.output_body(EmptyResponseSchema(), default_http_code=204)
-def send(file_name, hapic_data):
-    with open(file_name, 'wb+') as file:
-        file.write(hapic_data.files['file'].read())
-
+def play_bird_avi():
+    player = vlc.MediaPlayer('bird.avi')
+    player.play()
     return '', 204
 
 
@@ -167,6 +165,18 @@ def files(hapic_data):
 
 
 @hapic.with_api_doc()
+@app.route('/send/<file_name>', methods=['POST'])
+@hapic.input_path(SendInputPathSchema())
+@hapic.input_files(SendInputFilesSchema())
+@hapic.output_body(EmptyResponseSchema(), default_http_code=204)
+def send(file_name, hapic_data):
+    with open(file_name, 'wb+') as file:
+        file.write(hapic_data.files['file'].read())
+
+    return '', 204
+
+
+@hapic.with_api_doc()
 @app.route('/file/<file>')
 @hapic.handle_exception(FileNotFoundError, http_code=400)
 @hapic.input_path(FilePathSchema())
@@ -182,15 +192,6 @@ def file(file, hapic_data):
         infos['is_link'] = os.path.islink(file)
 
     return infos
-
-
-@hapic.with_api_doc()
-@app.route('/bird')
-@hapic.output_body(EmptyResponseSchema(), default_http_code=204)
-def play_bird_avi():
-    player = vlc.MediaPlayer('bird.avi')
-    player.play()
-    return '', 204
 
 
 @hapic.with_api_doc()
