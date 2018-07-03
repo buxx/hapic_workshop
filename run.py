@@ -1,5 +1,7 @@
 # coding: utf-8
 import os
+import traceback
+from datetime import datetime
 
 import marshmallow
 import vlc
@@ -9,9 +11,13 @@ from flask import Flask
 from os import listdir
 from os.path import isfile
 from os.path import join
+
+from hapic.error import ErrorBuilderInterface
 from hapic.ext.flask import FlaskContext
 
 # Flask app
+from hapic.processor import ProcessValidationError
+
 app = Flask('vlc control')
 
 
@@ -86,6 +92,41 @@ class VlcPlayProblem(Exception):
         self.error_detail = detail
 
 
+# Error builders
+class ErrorBuilder(ErrorBuilderInterface):
+    msg = marshmallow.fields.String(required=True)
+    utc_datetime = marshmallow.fields.DateTime(required=True)
+    traceback = marshmallow.fields.String(
+        required=False,
+        allow_none=True,
+    )
+    details = marshmallow.fields.Dict(
+        required=False,
+        allow_none=True,
+    )
+
+    def build_from_exception(
+        self,
+        exception: Exception,
+        include_traceback: bool = False,
+    ) -> dict:
+        return {
+            'msg': str(exception),
+            'utc_datetime': datetime.utcnow(),
+            'details': getattr(exception, 'error_detail', None),
+            'traceback': traceback.format_exc() if include_traceback else None
+        }
+
+    def build_from_validation_error(
+        self,
+        error: ProcessValidationError,
+    ) -> dict:
+        return {
+            'msg': error.message,
+            'utc_datetime': datetime.utcnow(),
+        }
+
+
 # Routes
 @hapic.with_api_doc()
 @app.route('/send/<file_name>', methods=['POST'])
@@ -154,7 +195,7 @@ def play_bird_avi():
 
 @hapic.with_api_doc()
 @app.route('/play/<file>')
-@hapic.handle_exception(VlcPlayProblem)
+@hapic.handle_exception(VlcPlayProblem, error_builder=ErrorBuilder())
 @hapic.input_path(PlayFilePathSchema())
 @hapic.output_body(EmptyResponseSchema(), default_http_code=204)
 def play_file(file, hapic_data):
@@ -176,8 +217,14 @@ def play_file(file, hapic_data):
 
 
 # doc view
-hapic.set_context(FlaskContext(app))
+context = FlaskContext(app)
+hapic.set_context(context)
 hapic.add_documentation_view('/api/doc')
+
+# Set our error builder
+context.default_error_builder = ErrorBuilder()
+# Enabme debug mode
+context.debug = True
 
 # run server
 app.run(debug=True)
