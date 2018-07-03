@@ -48,6 +48,8 @@ Read [workshop/01-start.md](workshop/01-start.md) for start. To summary:
   * Use your own error builder
 * 05
   * Manage all uncatched exceptions (TODO in run.py)
+* 06
+  * Change web framework
 
 
 File `run.py` contains compiled workshop work.
