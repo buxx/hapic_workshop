@@ -41,6 +41,7 @@ Read [workshop/01-start.md](workshop/01-start.md) for start. To summary:
 * 02
   * Write and decorate view who return list of models
   * Try to make wrong http request
+  * Try to make wrong http response
 * 03
   * Write and decorate a view to upload a file
 * 04
