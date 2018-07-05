@@ -48,7 +48,7 @@ Read [workshop/01-start.md](workshop/01-start.md) for start. To summary:
   * Write and decorate a view with error handling
   * Use your own error builder
 * 05
-  * Manage all uncatched exceptions (TODO in run.py)
+  * Manage all uncatched exceptions
 * 06
   * Change web framework
 

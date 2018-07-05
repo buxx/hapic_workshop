@@ -3,21 +3,19 @@ import os
 import traceback
 from datetime import datetime
 
-import marshmallow
-import vlc
-import hapic
-from flask import Flask
-
 from os import listdir
 from os.path import isfile
 from os.path import join
 
+import marshmallow
+import vlc
+import hapic
+from flask import Flask
 from hapic.error import ErrorBuilderInterface
 from hapic.ext.flask import FlaskContext
-
-# Flask app
 from hapic.processor import ProcessValidationError
 
+# Flask app
 app = Flask('vlc control')
 
 
@@ -217,6 +215,13 @@ def play_file(file, hapic_data):
     return '', 204
 
 
+@hapic.with_api_doc()
+@app.route('/error')
+@hapic.output_body(EmptyResponseSchema(), default_http_code=204)
+def error():
+    1/0
+
+
 # doc view
 context = FlaskContext(app)
 hapic.set_context(context)
@@ -224,7 +229,9 @@ hapic.add_documentation_view('/api/doc')
 
 # Set our error builder
 context.default_error_builder = ErrorBuilder()
-# Enabme debug mode
+context.handle_exception(Exception, http_code=500)
+context.handle_exception(ZeroDivisionError, http_code=500)
+# Enable debug mode
 context.debug = True
 
 # run server
