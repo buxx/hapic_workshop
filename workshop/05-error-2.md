@@ -7,7 +7,15 @@ Hapic permit to catch non caught error at view level. Write an error view:
 ``` python
 from flask import Flask
 import hapic
+import marshmallow
 from hapic.ext.flask import FlaskContext
+
+
+class EmptyResponseSchema(marshmallow.Schema):
+    pass
+
+
+app = Flask('vlc control')
 
 
 @hapic.with_api_doc()
@@ -37,13 +45,52 @@ returned.
 Solution:
 
 ``` python
-import hapic
 from flask import Flask
-
+import hapic
+from hapic.error import ErrorBuilderInterface
+import marshmallow
 from hapic.ext.flask import FlaskContext
 
 
-# Flask app
+class EmptyResponseSchema(marshmallow.Schema):
+    pass
+
+
+class ErrorBuilder(ErrorBuilderInterface):
+    msg = marshmallow.fields.String(required=True)
+    utc_datetime = marshmallow.fields.DateTime(required=False)
+    traceback = marshmallow.fields.String(
+        required=False,
+        allow_none=True,
+    )
+    details = marshmallow.fields.Dict(
+        required=False,
+        allow_none=True,
+    )
+
+    def build_from_exception(
+        self,
+        exception: Exception,
+        include_traceback: bool = False,
+    ) -> dict:
+        return {
+            'msg': str(exception),
+            'utc_datetime': datetime.utcnow(),
+            'details': getattr(exception, 'error_detail', None),
+            'traceback': traceback.format_exc() if include_traceback else None
+        }
+
+    def build_from_validation_error(
+        self,
+        error: ProcessValidationError,
+    ) -> dict:
+        return {
+            'msg': error.message,
+            'utc_datetime': datetime.utcnow(),
+            'details': error.details,
+        }
+
+
 app = Flask('vlc control')
 
 
@@ -52,7 +99,6 @@ app = Flask('vlc control')
 @hapic.output_body(EmptyResponseSchema(), default_http_code=204)
 def error():
     1/0
-
 
 # doc view
 context = FlaskContext(app)

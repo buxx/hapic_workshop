@@ -6,24 +6,24 @@ Hapic permit to manage error at view level and make an error response
 according to it. Write a view who permit to get information about a file:
 
 ``` python
-import flask
-import vlc
 import os
+
+from flask.json import jsonify
 
 app = Flask('vlc control')
 
 
 @app.route('/file/<file>')
-def file(file, hapic_data):
+def file(file):
     infos = {
         'name': file,
         'size': os.path.getsize(file),
     }
 
-    if hapic_data.query.get('verbose'):
+    if request.args.get('verbose'):
         infos['is_link'] = os.path.islink(file)
 
-    return infos
+    return jsonify(infos)
 
 app.run(debug=True)
 ```
@@ -43,12 +43,45 @@ If you make a query specifying a wrong file path, eg.
 Solution:
 
 ``` python
-import flask
-import vlc
-import os
 import hapic
+from flask import Flask, request
+import marshmallow
+import os
+
+from flask.json import jsonify
+from hapic.ext.flask import FlaskContext
 
 app = Flask('vlc control')
+
+
+class FilePathSchema(marshmallow.Schema):
+    file = marshmallow.fields.String(
+        required=True,
+        description='file path to get info',
+        example='bird.avi',
+    )
+
+
+class FileQuerySchema(marshmallow.Schema):
+    verbose = marshmallow.fields.Integer(
+        required=False,
+        description='Get more infos about file',
+        example='1',
+        default=0,
+    )
+
+
+class FileInfoSchema(marshmallow.Schema):
+    name = marshmallow.fields.String(
+        required=True,
+    )
+    size = marshmallow.fields.String(
+        required=False,
+    )
+    is_link = marshmallow.fields.Boolean(
+        required=False,
+        allow_none=True,
+    )
 
 
 @hapic.with_api_doc()
@@ -59,14 +92,15 @@ app = Flask('vlc control')
 @hapic.output_body(FileInfoSchema())
 def file(file, hapic_data):
     infos = {
-        'name': file,
+        'name': hapic_data.path['file'],
         'size': os.path.getsize(file),
     }
 
     if hapic_data.query.get('verbose'):
-        infos['is_link'] = os.path.islink(file)
+        infos['is_link'] = os.path.islink(hapic_data.path['file'])
 
-    return infos
+    return jsonify(infos)
+
 
 context = FlaskContext(app)
 hapic.set_context(context)
@@ -81,13 +115,33 @@ app.run(debug=True)
 Take this view:
 
 ``` python
-import flask
+from os.path import isfile
+
+from flask import Flask
 import vlc
 import hapic
 import marshmallow
 from hapic.ext.flask import FlaskContext
 
 app = Flask('vlc control')
+
+
+class VlcPlayProblem(Exception):
+    def __init__(self, message, detail=None):
+        super().__init__(message)
+        self.error_detail = detail
+
+
+class PlayFilePathSchema(marshmallow.Schema):
+    file = marshmallow.fields.String(
+        required=True,
+        description='file path to play',
+        example='bird.avi',
+    )
+
+
+class EmptyResponseSchema(marshmallow.Schema):
+    pass
 
 
 @hapic.with_api_doc()
@@ -111,7 +165,8 @@ def play_file(file, hapic_data):
 
     player.play()
     return '', 204
-    
+
+
 # doc view
 context = FlaskContext(app)
 hapic.set_context(context)
@@ -165,22 +220,13 @@ Solution:
 
 
 ``` python
-import os
-import traceback
-from datetime import datetime
-
-import marshmallow
-import vlc
-import hapic
-from flask import Flask
-
 from os.path import isfile
 
-from hapic.error import ErrorBuilderInterface
+from flask import Flask
+import vlc
+import hapic
+import marshmallow
 from hapic.ext.flask import FlaskContext
-
-# Flask app
-from hapic.processor import ProcessValidationError
 
 app = Flask('vlc control')
 
@@ -220,9 +266,27 @@ class ErrorBuilder(ErrorBuilderInterface):
         }
 
 
+class VlcPlayProblem(Exception):
+    def __init__(self, message, detail=None):
+        super().__init__(message)
+        self.error_detail = detail
+
+
+class PlayFilePathSchema(marshmallow.Schema):
+    file = marshmallow.fields.String(
+        required=True,
+        description='file path to play',
+        example='bird.avi',
+    )
+
+
+class EmptyResponseSchema(marshmallow.Schema):
+    pass
+
+
 @hapic.with_api_doc()
 @app.route('/play/<file>')
-@hapic.handle_exception(VlcPlayProblem, error_builder=ErrorBuilder())
+@hapic.handle_exception(VlcPlayProblem)
 @hapic.input_path(PlayFilePathSchema())
 @hapic.output_body(EmptyResponseSchema(), default_http_code=204)
 def play_file(file, hapic_data):

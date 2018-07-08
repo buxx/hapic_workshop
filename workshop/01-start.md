@@ -23,7 +23,7 @@ To execute your work, execute `python workshop.py command`. Useful documentation
 Write your 1st api endpoint:
 
 ``` python
-import flask
+from flask import Flask
 import vlc
 
 app = Flask('vlc control')
@@ -73,7 +73,7 @@ And us it with `@hapic.output_body(EmptyResponseSchema())` decorator.
 Solution:
 
 ``` python
-import flask
+from flask import Flask
 import vlc
 import hapic
 import marshmallow

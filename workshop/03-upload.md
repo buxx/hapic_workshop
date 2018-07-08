@@ -33,7 +33,7 @@ Solution:
 
 
 ``` python
-import flask
+from flask import Flask
 import vlc
 import hapic
 import marshmallow
@@ -43,6 +43,10 @@ app = Flask('vlc control')
 
 
 # Schemas
+class EmptyResponseSchema(marshmallow.Schema):
+    pass
+
+
 class SendInputPathSchema(marshmallow.Schema):
     file_name = marshmallow.fields.String(required=True)
 

@@ -58,7 +58,7 @@ import marshmallow
 class FileQuerySchema(marshmallow.Schema):
     verbose = marshmallow.fields.Integer(
         required=False,
-        description='Get more infos about file',
+        description='Get more info about file',
         example='1',
         default=0,
     )
@@ -74,8 +74,12 @@ and `@hapic.output_body(FileInfoSchema(many=True))`
 Solution:
 
 ``` python
-import flask
-import vlc
+import os
+from os import listdir
+from os.path import isfile
+from os.path import join
+
+from flask import Flask
 import hapic
 import marshmallow
 from hapic.ext.flask import FlaskContext
@@ -152,13 +156,13 @@ hapic.add_documentation_view('/api/doc')
 app.run(debug=True)
 ```
 
-If you query this endpoint with `http :5000/files?verbose=1` you will see
+If you query this endpoint with `http ':5000/files?verbose=1'` you will see
 the http response with file info list. Documentation of this endpoint is also
 available (at `http://127.0.0.1:5000/api/doc`).
 
 ## 02.7
 
-Try to send a bad query, like with `http :5000/files?verbose=abc`. You will
+Try to send a bad query, like with `http ':5000/files?verbose=abc'`. You will
 see an bad request http response.
 
 ## 02.8
