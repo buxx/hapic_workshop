@@ -7,6 +7,11 @@ Hapic workshop: Discover hapic
 * Python3.4 or Python3.5 or Python3.6
 * vlc
 
+
+Debian packages
+
+* python3-yaml
+
 # Install
 
 Create a virtualenv
