@@ -12,8 +12,9 @@ We will setup a web server who:
 ## 01.1
 
 Setup your development environment: Follow README instructions, chapter "Install".
-To follow next instructions, create a file named `workshop.py` and write into it.
-To execute your work, execute `python workshop.py command`. Useful documentation:
+To follow next instructions, create a file named `workshop.py` into project root directory
+and write into it. To execute your work, execute `python workshop.py` command.
+Useful documentation:
 
 * Marshmallow: https://marshmallow.readthedocs.io/en/latest/
 * Flask: http://flask.pocoo.org/docs/1.0/
