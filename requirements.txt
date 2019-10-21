@@ -4,7 +4,7 @@ click==6.7
 Flask==1.0.2
 hapic==0.47
 hapic-apispec==0.37.0
-httpie==0.9.9
+httpie==1.0.3
 idna==2.7
 itsdangerous==0.24
 Jinja2==2.10
